@@ -11,6 +11,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -29,6 +31,9 @@ public class DownLoadTask {
     public  boolean isPause=false;
     public int mThreadCount=1; // 线程的数量
     public List<DownLoadThread> threadList=null;
+//    创建线程池
+    public static ExecutorService mexecutor= Executors.newCachedThreadPool();
+
     public DownLoadTask(Context context, FileInfo fileInfo,int mThreadCount){
        this.fileInfo=fileInfo;
         this.context=context;
@@ -57,11 +62,14 @@ public class DownLoadTask {
 //        启动多个线程进行下载
         for (ThreadInfo th:threads){
             DownLoadThread downLoadThread = new DownLoadThread(th);
+//            使用线程池来启动线程
+            mexecutor.execute(downLoadThread);
             downLoadThread.start();
 //            添加到线程集合
             threadList.add(downLoadThread);
+            //            向数据库插入线程信息
+                threadDao.insertThread(th);
         }
-
     }
 //    判断是否所有线程都执行完毕
     private synchronized void checkThreadsFinished(){
@@ -73,6 +81,8 @@ public class DownLoadTask {
             }
         }
         if (allThread){
+            //                    下载完成删除数据库线程的信息
+            threadDao.deleteThread(fileInfo.getUrl());
 //            发送广播通知UI下载任务结束
             Intent intent=new Intent(DownLoadService.ACTION_FINISHED);
             intent.putExtra("fileInfo",fileInfo);
@@ -92,15 +102,11 @@ public class DownLoadTask {
         @Override
         public void run() {
             super.run();
-
-//            向数据库插入线程信息
-          if (!threadDao.isExists(threadInfo.getUrl(),threadInfo.getId())){
-              threadDao.insertThread(threadInfo);
-          }
             URL url = null;
             HttpURLConnection urlConnection=null;
             try {
                 url = new URL(threadInfo.getUrl());
+                //Log.d("TAG",threadInfo.getUrl()+"bu--");
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setConnectTimeout(5000);
                 urlConnection.setRequestMethod("GET");
@@ -130,8 +136,7 @@ public class DownLoadTask {
                         mfinished+=length;
 //                        累加每个线程完成的进度
                         threadInfo.setFinished(threadInfo.getFinished()+length);
-
-                        if (System.currentTimeMillis()-time>500){
+                        if (System.currentTimeMillis()-time>1000){
                             time= System.currentTimeMillis();
                              intent.putExtra("finished",mfinished/fen );
                             intent.putExtra("id",fileInfo.getId() );
@@ -146,8 +151,7 @@ public class DownLoadTask {
                     }
 //                    表示线程执行完毕
                     isFinished=true;
-//                    下载完成删除数据库线程的信息
-                    threadDao.deleteThread(threadInfo.getUrl(),threadInfo.getId());
+
 //                    检查线程是否执行完毕
                     checkThreadsFinished();
                 }

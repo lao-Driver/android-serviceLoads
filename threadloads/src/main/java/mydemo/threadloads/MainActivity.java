@@ -10,6 +10,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button load;
     private Button stop;
     private FileInfo fileInfo;
+//    多个下载任务添加到集合，文件的id对应文件在集合中的下标
     private List<FileInfo> fileList=new ArrayList<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +32,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         initView();
         fileInfo = new FileInfo("0", "911Mothers_2010W-480p.mp4", "http://mirror.aarnet.edu.au/pub/TED-talks/911Mothers_2010W-480p.mp4", 0, 0);
+        fileList.add(fileInfo);
         content.setText(fileInfo.getFileName());
         progressBar.setMax(100);
 
@@ -80,17 +83,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (DownLoadService.ACTION_UPDATE.equals(intent.getAction())){
                  int finished = intent.getIntExtra("finished", 0);
                  int id = intent.getIntExtra("id", 0);
-
+                setProgress(String.valueOf(id),finished);
 
             } if (DownLoadService.ACTION_FINISHED.equals(intent.getAction())){
                 FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("fileInfo");
                 setProgress(fileInfo.getId(),0);
-                //Toast.makeText(MainActivity.this,fileInfo)
+                Toast.makeText(MainActivity.this,fileList.get(Integer.valueOf(fileInfo.getId())).getFileName(),Toast.LENGTH_SHORT).show();
             }
         }
     };
 
     public void setProgress(String  id,int Progress){
-        //progressBar.setProgress();
+        FileInfo fileInfo = fileList.get(Integer.valueOf(id));
+        fileInfo.setFinished(Progress);
+        progressBar.setProgress(fileInfo.getFinished());
+      //  Log.d("TAG",Progress+"bu--");
     }
 }

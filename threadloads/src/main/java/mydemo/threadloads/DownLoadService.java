@@ -46,7 +46,8 @@ public class DownLoadService extends Service {
         if (ACTION_START.equals(intent.getAction())){
 //            获取文件信息对象
             FileInfo fileinfo = (FileInfo) intent.getSerializableExtra("fileinfo");
-            new InitThread(fileinfo).start();
+//             使用线程池启动线程
+            DownLoadTask.mexecutor.execute(new InitThread(fileinfo));
         }else if (ACTION_STOP.equals(intent.getAction())){
             //            获取文件信息对象
             FileInfo fileinfo = (FileInfo) intent.getSerializableExtra("fileinfo");

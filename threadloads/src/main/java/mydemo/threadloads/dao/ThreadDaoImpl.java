@@ -16,12 +16,13 @@ import mydemo.threadloads.bean.ThreadInfo;
 
 public class ThreadDaoImpl implements ThreadDao {
     DBHelper dbHelper=null;
+
     public ThreadDaoImpl(Context context){
-        dbHelper = new DBHelper(context);
+        dbHelper = DBHelper.getInstance(context);
     }
 
     @Override
-    public void insertThread(ThreadInfo threadInfo) {
+    public synchronized void insertThread(ThreadInfo threadInfo) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values=new ContentValues();
         values.put("thread_id",threadInfo.getId());
@@ -33,14 +34,14 @@ public class ThreadDaoImpl implements ThreadDao {
     }
 
     @Override
-    public void deleteThread(String url, int thread_id) {
+    public synchronized void deleteThread(String url) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.delete("thread_info","url=? and thread_id=?",new String[]{url,String.valueOf(thread_id)});
+        db.delete("thread_info","url=? ",new String[]{url});
         db.close();
     }
 
     @Override
-    public void updateThread(String url, int thread_id, int finished) {
+    public synchronized void updateThread(String url, int thread_id, int finished) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values=new ContentValues();
         values.put("finished",String.valueOf(finished));
@@ -50,7 +51,7 @@ public class ThreadDaoImpl implements ThreadDao {
 
     @Override
     public List<ThreadInfo> getThreads(String url) {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
         List<ThreadInfo> list=new ArrayList<>();
         Cursor th = db.query("thread_info", null, "url=?", new String[]{url}, null, null, null, null);
         while (th.moveToNext()){
@@ -64,7 +65,7 @@ public class ThreadDaoImpl implements ThreadDao {
 
     @Override
     public boolean isExists(String url, int thread_id) {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor th = db.query("thread_info", null, "url=? and thread_id=?",new String[]{url,String.valueOf(thread_id)}, null, null, null, null);
         boolean b = th.moveToNext();
         return b;
