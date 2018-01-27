@@ -39,6 +39,7 @@ public class DownLoadTask {
         this.context=context;
         this.mThreadCount=mThreadCount;
         threadDao = new ThreadDaoImpl(context);
+
     }
     public void DownLoad(){
         List<ThreadInfo> threads = threadDao.getThreads(fileInfo.getUrl());
@@ -63,8 +64,7 @@ public class DownLoadTask {
         for (ThreadInfo th:threads){
             DownLoadThread downLoadThread = new DownLoadThread(th);
 //            使用线程池来启动线程
-            mexecutor.execute(downLoadThread);
-            downLoadThread.start();
+            DownLoadTask.mexecutor.execute(downLoadThread);
 //            添加到线程集合
             threadList.add(downLoadThread);
             //            向数据库插入线程信息
@@ -127,7 +127,7 @@ public class DownLoadTask {
                     buffered = new BufferedInputStream(inputStream);
                     byte[] butt=new byte[1024 * 4];
                     int length=0;
-                    //                设置更新UI的时间 500秒更新一次 这样保持App性能
+                    //                设置更新UI的时间 1000秒更新一次 这样保持App性能
                     long time= System.currentTimeMillis();
                     int fen=fileInfo.getLength()/100;
                     while ((length= buffered.read(butt,0,butt.length))!=-1){
