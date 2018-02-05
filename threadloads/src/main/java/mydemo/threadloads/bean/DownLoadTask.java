@@ -57,6 +57,8 @@ public class DownLoadTask {
                 }
                 //把线程信息添加到集合
                 threads.add(threadInfo);
+                //            向数据库插入线程信息
+                threadDao.insertThread(threadInfo);
             }
         }
         threadList=new ArrayList<>();
@@ -64,11 +66,11 @@ public class DownLoadTask {
         for (ThreadInfo th:threads){
             DownLoadThread downLoadThread = new DownLoadThread(th);
 //            使用线程池来启动线程
-            DownLoadTask.mexecutor.execute(downLoadThread);
+            downLoadThread.start();
+           // DownLoadTask.mexecutor.execute(downLoadThread);
 //            添加到线程集合
             threadList.add(downLoadThread);
-            //            向数据库插入线程信息
-                threadDao.insertThread(th);
+
         }
     }
 //    判断是否所有线程都执行完毕
@@ -113,6 +115,7 @@ public class DownLoadTask {
 //                设置下载位置  "Range"-下载的范围  "bytes="+start+"-"+threadInfo.getEnd() 设置文件的开始位置和结束位置
                 int start=threadInfo.getStart()+threadInfo.getFinished();
                 urlConnection.setRequestProperty("Range","bytes="+start+"-"+threadInfo.getEnd());
+
 //                设置文件的写入位置
                 File file=new File(DownLoadService.DOWNLOAD_PATH,fileInfo.getFileName());
                 rand = new RandomAccessFile(file,"rwd");
@@ -135,17 +138,20 @@ public class DownLoadTask {
 //                        把下载的进度通过广播发送个Activity
                         mfinished+=length;
 //                        累加每个线程完成的进度
+
                         threadInfo.setFinished(threadInfo.getFinished()+length);
+
                         if (System.currentTimeMillis()-time>1000){
                             time= System.currentTimeMillis();
-                             intent.putExtra("finished",mfinished/fen );
-                            intent.putExtra("id",fileInfo.getId() );
-                             context.sendBroadcast(intent);
+                                intent.putExtra("finished",mfinished/fen );
+                                intent.putExtra("id",fileInfo.getId() );
+                                context.sendBroadcast(intent);
 
                         }
 //                        在暂停状态中存入数据
                         if (isPause){
                             threadDao.updateThread(threadInfo.getUrl(),threadInfo.getId(),threadInfo.getFinished());
+
                             return;
                         }
                     }
